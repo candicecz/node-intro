@@ -2,7 +2,8 @@ var request = require('request-promise');
 
 // Euclidian distance between two points
 function getDistance(pos1, pos2) {
-  return Math.sqrt(Math.pow(pos1.lat - pos2.lat, 2) + Math.pow(pos1.lng - pos2.lng, 2));
+  return console.log(Math.sqrt(Math.pow(pos1.lat - pos2.lat, 2) + Math.pow(pos1.lng - pos2.lng, 2)));
+
 }
 
 function getIssPosition() {
@@ -13,8 +14,6 @@ function getIssPosition() {
                 data.iss_position.lng = data.iss_position.longitude;
                 delete data.iss_position.latitude;
                 delete data.iss_position.longitude;;
-
-
                 return data.iss_position;
             });
 }
@@ -27,47 +26,45 @@ getIssPosition()
     return ('Something went wrong', error.stack);
 });
 
-function getAddressPosition() {
-  return request('https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=AIzaSyBKV7tMipn-yxf_DsTtlsO6Iidv05D2S6o')
+function getAddressPosition(address) {
+  return request('https://maps.googleapis.com/maps/api/geocode/json?address=' + address +"&key=AIzaSyAR04V6RBFODLrLJqGOv24Kp9-hBHCO8Mo")
     .then(function(location){
       var data = JSON.parse(location)
-      return data.results[0].geometry.location;
+      var location= data.results[0].geometry.location;
+      return location;
     })
 }
-
-getAddressPosition()
-.then(function(location){
-    return ('The coordinates of the location are', location);
-})
-.catch(function(error){
-    return ('Something went wrong', error.stack);
-});
 
 
 function getCurrentTemperatureAtPosition(position) {
-  return request('https://api.darksky.net/forecast/e6cf3a039cddf2244390b39912a08607/37.8267,-122.4233')
-    .then(function(temperature){
-      var data = JSON.parse(temperature)
-      console.log(data.currently.temperature);
-      return data.currently.temperature
-    })
-  }
-
-
-getCurrentTemperatureAtPosition()
-  .then(function(temperature){
-    console.log('The current temperature at this position is ', temperature);
-  })
-  .catch(function(error){
-    console.log('Something went wrong', error.stack);
-  });
-
-
+  return request ("https://api.darksky.net/forecast/e6cf3a039cddf2244390b39912a08607/" + position.lat + "," + position.lng)
+  .then(
+    function(response){
+      var data = JSON.parse(response);
+      var temperature = data.currently.temperature;
+      return console.log(temperature);
+    }
+  )
+}
 
 function getCurrentTemperature(address) {
-
+    getAddressPosition(address)
+    .then(
+      function(response){
+        getCurrentTemperatureAtPosition(response)
+      }
+    )
 }
 
 function getDistanceFromIss(address) {
-
+  Promise.all(
+    [getIssPosition(), getAddressPosition(address)]
+  )
+  .then(
+    function(data){
+      var issPosition = data[0];
+      var getAddressPosition = data[1];
+      getDistance(issPosition,getAddressPosition);
+    })
 }
+getDistanceFromIss("montreal");
